@@ -175,14 +175,23 @@ export async function aidatOdemeAyarla(
 
 // ---- Hoca e-postaları ve aidat hatırlatma kaydı ----
 
+export type EkstraHoca = {
+  id: string;
+  ad: string;
+  eposta: string;
+  grup?: Grup; // boşsa genel özet gönderilir
+};
+
 export type HocaMailAyar = {
   mailler: Record<string, string>;
   gonderilen: Record<string, string[]>; // ayKey -> gönderilen grup id'leri
+  ekstraHocalar: EkstraHoca[];
 };
 
 export function hocaMailAyarDinle(cb: (a: HocaMailAyar) => void) {
   return onSnapshot(doc(db, AYAR_COL, AYAR_DOC), (snap) => {
     const v = snap.data() ?? {};
+    const ham = Array.isArray(v.ekstraHocalar) ? v.ekstraHocalar : [];
     cb({
       mailler:
         v.hocaMailler && typeof v.hocaMailler === "object"
@@ -192,8 +201,31 @@ export function hocaMailAyarDinle(cb: (a: HocaMailAyar) => void) {
         v.aidatMailGonderim && typeof v.aidatMailGonderim === "object"
           ? (v.aidatMailGonderim as Record<string, string[]>)
           : {},
+      ekstraHocalar: ham
+        .filter(
+          (h: unknown): h is Partial<EkstraHoca> =>
+            !!h && typeof h === "object",
+        )
+        .map((h) => ({
+          id: typeof h.id === "string" ? h.id : String(Math.random()),
+          ad: typeof h.ad === "string" ? h.ad : "",
+          eposta: typeof h.eposta === "string" ? h.eposta : "",
+          grup:
+            h.grup === "seviye1" || h.grup === "seviye2" || h.grup === "hazirlik"
+              ? h.grup
+              : undefined,
+        }))
+        .filter((h) => h.ad || h.eposta),
     });
   });
+}
+
+export async function ekstraHocalariKaydet(hocalar: EkstraHoca[]) {
+  await setDoc(
+    doc(db, AYAR_COL, AYAR_DOC),
+    { ekstraHocalar: hocalar },
+    { merge: true },
+  );
 }
 
 export async function hocaMailleriKaydet(mailler: Record<string, string>) {

@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import AidatPanel from "@/components/AidatPanel";
+import AidatHatirlatma from "@/components/AidatHatirlatma";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,7 +90,7 @@ import {
   type Ders,
 } from "@/lib/talebeler";
 import { dosyaFotoDataUrl, bashHarfler } from "@/lib/foto";
-import { aidatTutariniOku } from "@/lib/talebeler";
+import { aidatTutariniOku, hocaMailAyarDinle } from "@/lib/talebeler";
 import { listeYazdir } from "@/lib/pdf";
 import { excelIndir, excelOku } from "@/lib/excel";
 import { Textarea } from "@/components/ui/textarea";
@@ -464,6 +466,33 @@ function Index() {
       localStorage.setItem(HOCA_AD_KEY, hoca);
     } catch {}
   }, [hoca]);
+
+  // Yeni ay geldiğinde aidat hatırlatma e-postası uyarısı
+  useEffect(() => {
+    if (!hocaModu) return;
+    const d = new Date();
+    const ayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const unsub = hocaMailAyarDinle((a) => {
+      const gonderilen = a.gonderilen[ayKey] ?? [];
+      const bekleyen = GRUPLAR.filter(
+        (g) => (a.mailler[g.id] ?? "").trim() && !gonderilen.includes(g.id),
+      );
+      if (bekleyen.length === 0) return;
+      toast.info(
+        `Bu ay ${bekleyen.length} hocaya aidat hatırlatması gönderilmedi.`,
+        {
+          id: "aidat-hatirlatma",
+          duration: 8000,
+          action: {
+            label: "Ayarları aç",
+            onClick: () => setAyarlarAcik(true),
+          },
+        },
+      );
+    });
+    return () => unsub();
+  }, [hocaModu]);
+
 
   // Firestore canlı veri
   useEffect(() => {
@@ -1673,6 +1702,8 @@ function Index() {
             </button>
             {hocaModu && (
               <>
+                <AidatHatirlatma talebeler={talebeler} />
+
                 <label className="flex w-full cursor-pointer items-center gap-3 rounded-md border border-border/60 px-3 py-2 text-left transition-colors hover:bg-accent">
                   <FileDown className="h-4 w-4 rotate-180 text-muted-foreground" />
                   <span className="text-sm font-medium">Talebe Listesi Excel Yükle</span>

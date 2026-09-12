@@ -172,3 +172,48 @@ export async function aidatOdemeAyarla(
   const harita = { ...(t.aidat ?? {}), [ayKey]: odendi };
   await talebeGuncelle(t.id, { aidat: harita });
 }
+
+// ---- Hoca e-postaları ve aidat hatırlatma kaydı ----
+
+export type HocaMailAyar = {
+  mailler: Record<string, string>;
+  gonderilen: Record<string, string[]>; // ayKey -> gönderilen grup id'leri
+};
+
+export function hocaMailAyarDinle(cb: (a: HocaMailAyar) => void) {
+  return onSnapshot(doc(db, AYAR_COL, AYAR_DOC), (snap) => {
+    const v = snap.data() ?? {};
+    cb({
+      mailler:
+        v.hocaMailler && typeof v.hocaMailler === "object"
+          ? (v.hocaMailler as Record<string, string>)
+          : {},
+      gonderilen:
+        v.aidatMailGonderim && typeof v.aidatMailGonderim === "object"
+          ? (v.aidatMailGonderim as Record<string, string[]>)
+          : {},
+    });
+  });
+}
+
+export async function hocaMailleriKaydet(mailler: Record<string, string>) {
+  await setDoc(
+    doc(db, AYAR_COL, AYAR_DOC),
+    { hocaMailler: mailler },
+    { merge: true },
+  );
+}
+
+export async function aidatMailGonderimIsaretle(
+  ayKey: string,
+  grupId: string,
+  mevcut: Record<string, string[]>,
+) {
+  const liste = Array.from(new Set([...(mevcut[ayKey] ?? []), grupId]));
+  await setDoc(
+    doc(db, AYAR_COL, AYAR_DOC),
+    { aidatMailGonderim: { ...mevcut, [ayKey]: liste } },
+    { merge: true },
+  );
+}
+

@@ -90,7 +90,7 @@ import {
   type Ders,
 } from "@/lib/talebeler";
 import { dosyaFotoDataUrl, bashHarfler } from "@/lib/foto";
-import { aidatTutariniOku } from "@/lib/talebeler";
+import { aidatTutariniOku, hocaMailAyarDinle } from "@/lib/talebeler";
 import { listeYazdir } from "@/lib/pdf";
 import { excelIndir, excelOku } from "@/lib/excel";
 import { Textarea } from "@/components/ui/textarea";

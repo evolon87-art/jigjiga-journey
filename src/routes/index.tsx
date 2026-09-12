@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import AidatPanel from "@/components/AidatPanel";
+import AidatHatirlatma from "@/components/AidatHatirlatma";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -464,6 +466,33 @@ function Index() {
       localStorage.setItem(HOCA_AD_KEY, hoca);
     } catch {}
   }, [hoca]);
+
+  // Yeni ay geldiğinde aidat hatırlatma e-postası uyarısı
+  useEffect(() => {
+    if (!hocaModu) return;
+    const d = new Date();
+    const ayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const unsub = hocaMailAyarDinle((a) => {
+      const gonderilen = a.gonderilen[ayKey] ?? [];
+      const bekleyen = GRUPLAR.filter(
+        (g) => (a.mailler[g.id] ?? "").trim() && !gonderilen.includes(g.id),
+      );
+      if (bekleyen.length === 0) return;
+      toast.info(
+        `Bu ay ${bekleyen.length} hocaya aidat hatırlatması gönderilmedi.`,
+        {
+          id: "aidat-hatirlatma",
+          duration: 8000,
+          action: {
+            label: "Ayarları aç",
+            onClick: () => setAyarlarAcik(true),
+          },
+        },
+      );
+    });
+    return () => unsub();
+  }, [hocaModu]);
+
 
   // Firestore canlı veri
   useEffect(() => {
